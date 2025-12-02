@@ -1,16 +1,20 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { LandingPage } from "@/components/landing-page" // Asegúrate de tener este componente
 
-export default async function Notes() {
-  // 1. Creamos el cliente
+export default async function Home() {
   const supabase = await createClient()
 
-  // 2. Hacemos la consulta
-  const { data: notes, error } = await supabase.from("notes").select()
+  // 1. Verificamos si ya existe una sesión
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // 3. Manejo básico de errores para depurar en v0
-  if (error) {
-    return <pre>Error: {JSON.stringify(error, null, 2)}</pre>
+  // 2. SEMÁFORO:
+  // Si ya tiene usuario, no tiene sentido mostrarle la landing de ventas.
+  // Lo mandamos directo a su panel de control.
+  if (user) {
+    redirect("/dashboard")
   }
 
-  return <pre>{JSON.stringify(notes, null, 2)}</pre>
+  // 3. Si no hay usuario, mostramos la Landing Page pública
+  return <LandingPage />
 }

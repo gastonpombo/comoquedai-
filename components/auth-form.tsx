@@ -1,163 +1,182 @@
 "use client"
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { createBrowserClient } from "@supabase/ssr"
-import { Loader2, Lock } from "lucide-react"
-
+import { useState } from "react"
+import { useRouter } from "next/navigation" // <--- Importamos esto
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
-export function AuthForm() {
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [isSignUp, setIsSignUp] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const [message, setMessage] = React.useState<string | null>(null)
-  const router = useRouter()
+// Hacemos que la prop sea opcional (?)
+interface AuthFormProps {
+  onSuccess?: () => void
+}
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+export function AuthForm({ onSuccess }: AuthFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const router = useRouter() // <--- Hook de navegación
+  const supabase = createClient()
 
-  async function handleDevLogin() {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
-    setError(null)
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: "demo@nanobanana.com",
-        password: "demo1234",
+        email,
+        password,
       })
-      if (error) throw error
-      router.push("/dashboard")
-      router.refresh()
+
+      if (error) {
+        toast.error("Error al iniciar sesión", {
+          description: error.message,
+        })
+      } else {
+        toast.success("¡Bienvenido de nuevo!")
+        
+        // --- AQUÍ ESTABA EL ERROR ---
+        // Ahora verificamos: Si existe onSuccess, lo usamos.
+        // Si no, redirigimos al dashboard nosotros mismos.
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.refresh() // Actualiza los componentes del servidor
+          router.push("/dashboard")
+        }
+      }
     } catch (error) {
-      setError("Dev user not found. Please create a user with email: demo@nanobanana.com and password: demo1234")
+      toast.error("Ocurrió un error inesperado")
     } finally {
       setIsLoading(false)
     }
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
-    setError(null)
-    setMessage(null)
-
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        toast.error("Error al registrarse", {
+          description: error.message,
         })
-        if (error) throw error
-        setMessage("Check your email to confirm your account")
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        toast.success("Cuenta creada", {
+          description: "Por favor revisa tu email para confirmar tu cuenta (o inicia sesión si desactivaste la confirmación).",
         })
-        if (error) throw error
-        router.push("/dashboard")
-        router.refresh()
+        // Opcional: Redirigir o limpiar formulario
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      toast.error("Ocurrió un error inesperado")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <Card className="border-border bg-card/50 backdrop-blur-xl">
-      <form onSubmit={onSubmit}>
-        <CardContent className="space-y-4 pt-6">
-          {error && (
-            <Alert
-              variant="destructive"
-              className="border-destructive/50 bg-destructive/20 text-destructive-foreground"
-            >
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {message && (
-            <Alert className="border-primary/50 bg-primary/20 text-primary-foreground">
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground">
-              Email
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              placeholder="name@example.com"
-              required
-              type="email"
-              className="border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground">
-              Password
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              required
-              type="password"
-              className="border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSignUp ? "Sign Up" : "Sign In"}
-          </Button>
+    <Card className="w-full border-0 bg-transparent shadow-none">
+      <Tabs defaultValue="login" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50">
+          <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
+          <TabsTrigger value="register">Registrarse</TabsTrigger>
+        </TabsList>
+        
+        {/* LOGIN FORM */}
+        <TabsContent value="login">
+          <form onSubmit={handleLogin}>
+            <CardHeader className="px-0">
+              <CardTitle>Iniciar Sesión</CardTitle>
+              <CardDescription>
+                Ingresa tu email y contraseña para acceder.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 px-0">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="m@ejemplo.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required 
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="px-0">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Ingresar
+              </Button>
+            </CardFooter>
+          </form>
+        </TabsContent>
 
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Development</span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            type="button"
-            className="w-full border-primary/20 hover:bg-primary/10 hover:text-primary bg-transparent"
-            onClick={handleDevLogin}
-            disabled={isLoading}
-          >
-            <Lock className="mr-2 h-4 w-4" />
-            Dev Login (Skip Auth)
-          </Button>
-
-          <Button
-            variant="link"
-            className="text-sm text-muted-foreground hover:text-primary"
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-          </Button>
-        </CardFooter>
-      </form>
+        {/* REGISTER FORM */}
+        <TabsContent value="register">
+          <form onSubmit={handleSignUp}>
+            <CardHeader className="px-0">
+              <CardTitle>Crear Cuenta</CardTitle>
+              <CardDescription>
+                Crea una cuenta nueva para empezar a usar ImageAI.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 px-0">
+              <div className="space-y-2">
+                <Label htmlFor="register-email">Email</Label>
+                <Input 
+                  id="register-email" 
+                  type="email" 
+                  placeholder="m@ejemplo.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-password">Contraseña</Label>
+                <Input 
+                  id="register-password" 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required 
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="px-0">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Registrarse
+              </Button>
+            </CardFooter>
+          </form>
+        </TabsContent>
+      </Tabs>
     </Card>
   )
 }

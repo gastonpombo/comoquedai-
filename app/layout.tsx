@@ -2,33 +2,24 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Toaster } from "../components/ui/sonner"
 import "./globals.css"
+// BORRAMOS la importación de Sidebar aquí para que no salga en el Login
+import { CreditsProvider } from "@/contexts/credits-context"
+import { Toaster } from "@/components/ui/sonner"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+})
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+})
 
 export const metadata: Metadata = {
-  title: "Nano Banana Pro",
-  description: "Your AI Creative Studio",
-  generator: "v0.app",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+  title: "ImageAI - Generación de Imágenes",
+  description: "Plataforma SaaS de IA",
 }
 
 export default function RootLayout({
@@ -37,11 +28,18 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`font-sans antialiased bg-zinc-950 text-zinc-50`}>
-        {children}
-        <Toaster />
-        <Analytics />
+    <html lang="es">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
+        {/* Proveedor de Créditos Global (Lógica) */}
+        <CreditsProvider>
+          
+          {/* Renderizamos los hijos DIRECTAMENTE, sin Sidebar forzada */}
+          {children}
+          
+          {/* Notificaciones Globales */}
+          <Toaster />
+          <Analytics />
+        </CreditsProvider>
       </body>
     </html>
   )
