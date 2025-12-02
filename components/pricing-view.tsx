@@ -1,118 +1,124 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Check, Loader2, Sparkles } from "lucide-react"
-import { useCredits } from "@/contexts/credits-context"
 import { toast } from "sonner"
 
-const pricingPlans = [
+// Asegúrate de tener estos IDs en tu .env.local en Vercel
+const PLANS = [
   {
-    name: "Starter",
-    price: 5,
-    credits: 50,
-    description: "Perfecto para probar la plataforma",
-    features: ["50 créditos", "Acceso a todos los workflows", "Soporte por email"],
-    popular: false,
+    name: "Básico",
+    credits: 100,
+    price: "$19",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC, 
+    features: ["100 Créditos", "Acceso a todos los workflows"],
   },
   {
-    name: "Creator",
-    price: 10,
-    credits: 100,
-    description: "Ideal para creadores de contenido",
-    features: ["100 créditos", "Acceso a todos los workflows", "Soporte prioritario", "Sin marca de agua"],
+    name: "Premium",
+    credits: 500,
+    price: "$49",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM, 
+    features: ["500 Créditos", "Soporte prioritario", "Generaciones rápidas"],
     popular: true,
   },
   {
-    name: "Pro",
-    price: 25,
-    credits: 300,
-    description: "Para profesionales y equipos",
-    features: ["300 créditos", "Acceso a todos los workflows", "Soporte 24/7", "Sin marca de agua", "API Access"],
-    popular: false,
+    name: "Empresas",
+    credits: 2000,
+    price: "$99",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_DFY, 
+    features: ["2000 Créditos", "API Access", "Soporte dedicado"],
   },
 ]
 
 export function PricingView() {
-  const [purchasingPlan, setPurchasingPlan] = useState<string | null>(null)
-  const { addCredits } = useCredits()
+  const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
 
+  // Detectar si venimos de un pago exitoso de Stripe
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      // CORRECCIÓN AQUÍ: Sintaxis correcta de Sonner
+      toast.success("¡Pago exitoso!", {
+        description: "Tus créditos se han añadido a tu cuenta."
+      })
+    } else if (searchParams.get("payment") === "cancelled") {
+      toast.info("Pago cancelado", {
+        description: "No se te ha cobrado nada."
+      })
+    }
+  }, [searchParams])
 
-  const handlePurchase = async (plan: (typeof pricingPlans)[0]) => {
-    setPurchasingPlan(plan.name)
+  const handleCheckout = async (priceId: string | undefined) => {
+    if (!priceId) {
+      toast.error("Error de configuración", { description: "Falta el ID del precio en las variables de entorno." })
+      return
+    }
 
-    // Simular redirección a Stripe por 2 segundos
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    setLoadingPriceId(priceId)
 
-    // Simular compra exitosa
-    addCredits(plan.credits)
-    setPurchasingPlan(null)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      })
 
-    toast({
-      title: "¡Pago exitoso!",
-      description: `Has comprado ${plan.credits} créditos. ¡Ya puedes usarlos!`,
-    })
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.error)
+
+      // Redirigir a la pasarela de Stripe
+      window.location.href = data.url
+
+    } catch (error: any) {
+      toast.error("Error al iniciar pago", { description: error.message })
+      setLoadingPriceId(null)
+    }
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold tracking-tight">Comprar Créditos</h2>
-        <p className="mt-1 text-muted-foreground">Elige el pack que mejor se adapte a tus necesidades</p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        {pricingPlans.map((plan) => (
-          <Card
-            key={plan.name}
-            className={`relative flex flex-col ${plan.popular ? "border-primary shadow-lg shadow-primary/10" : ""}`}
-          >
-            {plan.popular && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Sparkles className="mr-1 h-3 w-3" />
-                Más Popular
-              </Badge>
-            )}
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">${plan.price}</span>
-                <span className="text-muted-foreground"> USD</span>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <ul className="space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-primary" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full"
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+      {PLANS.map((plan) => (
+        <Card key={plan.name} className={`relative flex flex-col ${plan.popular ? "border-primary shadow-lg shadow-primary/20" : "border-zinc-800 bg-zinc-900/50"}`}>
+          {plan.popular && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+              Más Popular
+            </div>
+          )}
+          <CardHeader>
+            <CardTitle className="text-xl text-white">{plan.name}</CardTitle>
+            <CardDescription>{plan.credits} Créditos</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="mb-6 flex items-baseline gap-1">
+              <span className="text-4xl font-bold text-white">{plan.price}</span>
+              <span className="text-muted-foreground">/ único</span>
+            </div>
+            <ul className="space-y-2 text-sm text-zinc-300">
+              {plan.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button 
+                className="w-full" 
                 variant={plan.popular ? "default" : "outline"}
-                onClick={() => handlePurchase(plan)}
-                disabled={purchasingPlan !== null}
-              >
-                {purchasingPlan === plan.name ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Redirigiendo a Stripe...
-                  </>
-                ) : (
-                  `Comprar Pack`
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                onClick={() => handleCheckout(plan.priceId)}
+                disabled={loadingPriceId !== null}
+            >
+              {loadingPriceId === plan.priceId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Comprar
+            </Button>
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   )
 }
