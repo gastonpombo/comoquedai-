@@ -1,17 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation" // <--- Importamos esto
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { Loader2, ArrowRight, Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { motion } from "framer-motion"
 
-// Hacemos que la prop sea opcional (?)
 interface AuthFormProps {
   onSuccess?: () => void
 }
@@ -20,7 +20,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const router = useRouter() // <--- Hook de navegación
+  const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -39,14 +39,11 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         })
       } else {
         toast.success("¡Bienvenido de nuevo!")
-        
-        // --- AQUÍ ESTABA EL ERROR ---
-        // Ahora verificamos: Si existe onSuccess, lo usamos.
-        // Si no, redirigimos al dashboard nosotros mismos.
+
         if (onSuccess) {
           onSuccess()
         } else {
-          router.refresh() // Actualiza los componentes del servidor
+          router.refresh()
           router.push("/dashboard")
         }
       }
@@ -76,9 +73,8 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         })
       } else {
         toast.success("Cuenta creada", {
-          description: "Por favor revisa tu email para confirmar tu cuenta (o inicia sesión si desactivaste la confirmación).",
+          description: "Por favor revisa tu email para confirmar tu cuenta.",
         })
-        // Opcional: Redirigir o limpiar formulario
       }
     } catch (error) {
       toast.error("Ocurrió un error inesperado")
@@ -88,95 +84,120 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   }
 
   return (
-    <Card className="w-full border-0 bg-transparent shadow-none">
-      <Tabs defaultValue="login" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50">
-          <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-          <TabsTrigger value="register">Registrarse</TabsTrigger>
-        </TabsList>
-        
-        {/* LOGIN FORM */}
-        <TabsContent value="login">
-          <form onSubmit={handleLogin}>
-            <CardHeader className="px-0">
-              <CardTitle>Iniciar Sesión</CardTitle>
-              <CardDescription>
-                Ingresa tu email y contraseña para acceder.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-0">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="m@ejemplo.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="px-0">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Ingresar
-              </Button>
-            </CardFooter>
-          </form>
-        </TabsContent>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="w-full border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-black/20 p-1 rounded-xl mb-6">
+            <TabsTrigger
+              value="login"
+              className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+            >
+              Iniciar Sesión
+            </TabsTrigger>
+            <TabsTrigger
+              value="register"
+              className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+            >
+              Registrarse
+            </TabsTrigger>
+          </TabsList>
 
-        {/* REGISTER FORM */}
-        <TabsContent value="register">
-          <form onSubmit={handleSignUp}>
-            <CardHeader className="px-0">
-              <CardTitle>Crear Cuenta</CardTitle>
-              <CardDescription>
-                Crea una cuenta nueva para empezar a usar ImageAI.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-0">
-              <div className="space-y-2">
-                <Label htmlFor="register-email">Email</Label>
-                <Input 
-                  id="register-email" 
-                  type="email" 
-                  placeholder="m@ejemplo.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-password">Contraseña</Label>
-                <Input 
-                  id="register-password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="px-0">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Registrarse
-              </Button>
-            </CardFooter>
-          </form>
-        </TabsContent>
-      </Tabs>
-    </Card>
+          {/* LOGIN FORM */}
+          <TabsContent value="login">
+            <form onSubmit={handleLogin}>
+              <CardHeader className="px-0 pt-0">
+                <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Bienvenido
+                </CardTitle>
+                <CardDescription className="text-zinc-400">
+                  Ingresa tus credenciales para acceder al panel.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-zinc-300">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@agencia.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-black/20 border-white/10 focus:border-primary/50 text-white placeholder:text-zinc-600 h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-zinc-300">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-black/20 border-white/10 focus:border-primary/50 text-white h-11"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="px-0 pt-2">
+                <Button type="submit" className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Ingresar"}
+                </Button>
+              </CardFooter>
+            </form>
+          </TabsContent>
+
+          {/* REGISTER FORM */}
+          <TabsContent value="register">
+            <form onSubmit={handleSignUp}>
+              <CardHeader className="px-0 pt-0">
+                <CardTitle className="text-2xl font-bold text-white">Crear Cuenta</CardTitle>
+                <CardDescription className="text-zinc-400">
+                  Únete a la plataforma líder para agencias.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0">
+                <div className="space-y-2">
+                  <Label htmlFor="register-email" className="text-zinc-300">Email</Label>
+                  <Input
+                    id="register-email"
+                    type="email"
+                    placeholder="tu@agencia.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-black/20 border-white/10 focus:border-primary/50 text-white placeholder:text-zinc-600 h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-zinc-300">Contraseña</Label>
+                  <Input
+                    id="register-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-black/20 border-white/10 focus:border-primary/50 text-white h-11"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="px-0 pt-2">
+                <Button type="submit" className="w-full h-11 bg-white text-black hover:bg-white/90 font-semibold" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (
+                    <span className="flex items-center gap-2">
+                      Registrarse <ArrowRight className="h-4 w-4" />
+                    </span>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </Card>
+    </motion.div>
   )
 }

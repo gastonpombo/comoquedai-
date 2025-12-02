@@ -5,8 +5,9 @@ import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 import { WorkflowsGrid } from "@/components/workflows-grid"
 import { PricingView } from "@/components/pricing-view"
-import { GenerationsGallery } from "@/components/generations-gallery" // <--- Agregamos la galería
+import { GenerationsGallery } from "@/components/generations-gallery"
 import { Construction } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface Workflow {
   id: number
@@ -34,42 +35,68 @@ export function Dashboard({ onLogout, workflows }: DashboardProps) {
       case "dashboard":
       case "tienda":
         return (
-          <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight">
+          <motion.div
+            key="dashboard"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                 {currentView === "dashboard" ? "Workflows Disponibles" : "Tienda de Workflows"}
               </h2>
-              <p className="mt-1 text-muted-foreground">Selecciona un workflow para generar imágenes con IA</p>
+              <p className="mt-2 text-muted-foreground text-lg">Selecciona un workflow para generar imágenes con IA</p>
             </div>
             <WorkflowsGrid workflows={workflows} onNavigateToStore={handleNavigateToStore} />
-          </>
+          </motion.div>
         )
       case "mis-generaciones":
         return (
-          <div className="space-y-6">
-             <h2 className="text-2xl font-bold">Mis Generaciones</h2>
-             {/* Aquí mostramos la galería real */}
-             <GenerationsGallery />
-          </div>
+          <motion.div
+            key="generations"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">Mis Generaciones</h2>
+            <GenerationsGallery />
+          </motion.div>
         )
       case "comprar-creditos":
-        return <PricingView />
+        return (
+          <motion.div
+            key="credits"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <PricingView />
+          </motion.div>
+        )
       default:
         return (
-          <div className="flex h-64 flex-col items-center justify-center gap-4 text-muted-foreground">
-            <Construction className="h-16 w-16 opacity-50" />
-            <p>Sección en construcción</p>
+          <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-muted-foreground">
+            <Construction className="h-16 w-16 opacity-20" />
+            <p className="text-lg">Sección en construcción</p>
           </div>
         )
     }
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar onLogout={onLogout} currentView={currentView} onNavigate={setCurrentView} />
-      <div className="ml-64 flex flex-1 flex-col">
+      <div className="ml-72 flex flex-1 flex-col transition-all duration-300">
         <Header />
-        <main className="flex-1 p-6">{renderContent()}</main>
+        <main className="flex-1 p-8 overflow-x-hidden">
+          <AnimatePresence mode="wait">
+            {renderContent()}
+          </AnimatePresence>
+        </main>
       </div>
     </div>
   )
