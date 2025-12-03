@@ -4,32 +4,40 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-// Asegúrate de tener estos IDs en tu .env.local en Vercel
+// Definimos los planes
 const PLANS = [
+  {
+    name: "Gratis",
+    credits: 10,
+    price: "$0",
+    priceId: null, // No requiere pago
+    features: ["10 Créditos de regalo", "Acceso a workflows básicos", "Velocidad estándar"],
+    current: true, // <--- ESTE ES EL PLAN ACTIVO POR DEFECTO
+  },
   {
     name: "Básico",
     credits: 100,
     price: "$19",
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC, 
-    features: ["100 Créditos", "Acceso a todos los workflows"],
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC,
+    features: ["100 Créditos", "Acceso a todos los workflows", "Soporte por email"],
   },
   {
     name: "Premium",
     credits: 500,
     price: "$49",
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM, 
-    features: ["500 Créditos", "Soporte prioritario", "Generaciones rápidas"],
-    popular: true,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM,
+    features: ["500 Créditos", "Soporte prioritario", "Generaciones rápidas", "Acceso a betas"],
+    popular: true, // <--- ESTE SIGUE SIENDO EL POPULAR
   },
   {
     name: "Empresas",
     credits: 2000,
     price: "$99",
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_DFY, 
-    features: ["2000 Créditos", "API Access", "Soporte dedicado"],
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_DFY,
+    features: ["2000 Créditos", "API Access", "Soporte dedicado", "Workflows privados"],
   },
 ]
 
@@ -37,10 +45,8 @@ export function PricingView() {
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null)
   const searchParams = useSearchParams()
 
-  // Detectar si venimos de un pago exitoso de Stripe
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
-      // CORRECCIÓN AQUÍ: Sintaxis correcta de Sonner
       toast.success("¡Pago exitoso!", {
         description: "Tus créditos se han añadido a tu cuenta."
       })
@@ -51,11 +57,8 @@ export function PricingView() {
     }
   }, [searchParams])
 
-  const handleCheckout = async (priceId: string | undefined) => {
-    if (!priceId) {
-      toast.error("Error de configuración", { description: "Falta el ID del precio en las variables de entorno." })
-      return
-    }
+  const handleCheckout = async (priceId: string | null) => {
+    if (!priceId) return // Si es gratis, no hace nada
 
     setLoadingPriceId(priceId)
 
@@ -70,7 +73,6 @@ export function PricingView() {
 
       if (!response.ok) throw new Error(data.error)
 
-      // Redirigir a la pasarela de Stripe
       window.location.href = data.url
 
     } catch (error: any) {
@@ -80,14 +82,29 @@ export function PricingView() {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
       {PLANS.map((plan) => (
-        <Card key={plan.name} className={`relative flex flex-col ${plan.popular ? "border-primary shadow-lg shadow-primary/20" : "border-zinc-800 bg-zinc-900/50"}`}>
+        <Card
+          key={plan.name}
+          className={`relative flex flex-col transition-all duration-200 
+                ${plan.popular ? "border-primary shadow-lg shadow-primary/10 scale-105 z-10" : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"}
+                ${plan.current ? "bg-zinc-900/80 border-zinc-700" : ""}
+            `}
+        >
+          {/* Badge de Popular */}
           {plan.popular && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
               Más Popular
             </div>
           )}
+
+          {/* Badge de Plan Actual */}
+          {plan.current && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 shadow-sm">
+              Tu Plan
+            </div>
+          )}
+
           <CardHeader>
             <CardTitle className="text-xl text-white">{plan.name}</CardTitle>
             <CardDescription>{plan.credits} Créditos</CardDescription>
@@ -95,26 +112,26 @@ export function PricingView() {
           <CardContent className="flex-1">
             <div className="mb-6 flex items-baseline gap-1">
               <span className="text-4xl font-bold text-white">{plan.price}</span>
-              <span className="text-muted-foreground">/ único</span>
+              {plan.priceId && <span className="text-muted-foreground">/ pago único</span>}
             </div>
-            <ul className="space-y-2 text-sm text-zinc-300">
+            <ul className="space-y-3 text-sm text-zinc-300">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>{feature}</span>
+                  <Check className={`h-4 w-4 ${plan.current ? "text-zinc-500" : "text-primary"}`} />
+                  <span className={plan.current ? "text-zinc-500" : ""}>{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
           <CardFooter>
-            <Button 
-                className="w-full" 
-                variant={plan.popular ? "default" : "outline"}
-                onClick={() => handleCheckout(plan.priceId)}
-                disabled={loadingPriceId !== null}
+            <Button
+              className="w-full"
+              variant={plan.popular ? "default" : plan.current ? "secondary" : "outline"}
+              onClick={() => handleCheckout(plan.priceId)}
+              disabled={loadingPriceId !== null || plan.current === true} // Deshabilitar si es el actual
             >
               {loadingPriceId === plan.priceId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Comprar
+              {plan.current ? "Plan Actual" : "Comprar"}
             </Button>
           </CardFooter>
         </Card>

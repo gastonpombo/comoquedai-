@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { createClient } from "@/lib/supabase/client"
 
 interface CreditsContextType {
-  credits: number | null
+  credits: number
   loading: boolean
   userId: string | null
   refreshCredits: () => Promise<void>
@@ -15,15 +15,14 @@ interface CreditsContextType {
 const CreditsContext = createContext<CreditsContextType | undefined>(undefined)
 
 export function CreditsProvider({ children }: { children: ReactNode }) {
-  const [credits, setCredits] = useState<number | null>(null)
+  // CAMBIO: Inicializamos en 0 en lugar de null para evitar bloqueos visuales
+  const [credits, setCredits] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
-  
-  // Usamos useState para estabilizar el cliente
+
   const [supabase] = useState(() => createClient())
 
   const fetchCredits = useCallback(async (uid: string) => {
-    console.log("💰 [Credits] Buscando créditos para:", uid)
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -32,70 +31,54 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (error) {
-        console.error("❌ [Credits] Error al leer DB:", error.message)
-      }
-
-      if (data) {
-        console.log("✅ [Credits] Encontrados:", data.credits)
+        console.warn("No se pudo cargar el perfil (¿Usuario nuevo o borrado?):", error.message)
+        // Si no existe, asumimos 0
+        setCredits(0)
+      } else if (data) {
         setCredits(data.credits)
-      } else {
-        console.warn("⚠️ [Credits] Usuario sin perfil en DB")
       }
     } catch (error) {
-      console.error("❌ [Credits] Error fatal fetching:", error)
+      console.error("Error crítico fetching credits:", error)
+      setCredits(0)
+    } finally {
+      // SIEMPRE apagamos el loading, pase lo que pase
+      setLoading(false)
     }
   }, [supabase])
 
   const refreshCredits = useCallback(async () => {
-    // console.log("🔄 [Credits] Verificando sesión...")
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    // CAMBIO: Si el error es que falta la sesión, lo ignoramos (es normal si no estás logueado)
-    if (error && !error.message.includes("Auth session missing")) {
-        console.error("❌ [Auth] Error inesperado:", error.message)
-    }
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-      // console.log("👤 [Auth] Usuario:", user.email)
       setUserId(user.id)
       await fetchCredits(user.id)
     } else {
-      // Si no hay usuario, limpiamos todo silenciosamente
       setUserId(null)
-      setCredits(null)
+      setCredits(0)
+      setLoading(false)
     }
-    setLoading(false)
   }, [supabase, fetchCredits])
-  
+
   const deductCredits = useCallback((amount: number) => {
-      setCredits((prev) => (prev !== null ? prev - amount : null))
-    }, [])
+    setCredits((prev) => Math.max(0, prev - amount))
+  }, [])
 
   const addCredits = useCallback((amount: number) => {
-    setCredits((prev) => (prev !== null ? prev + amount : amount))
+    setCredits((prev) => prev + amount)
   }, [])
 
   useEffect(() => {
-    console.log("🏁 [Init] Montando CreditsProvider")
     refreshCredits()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("📢 [Evento Auth]:", event)
-      
       if (session?.user) {
-        console.log("👤 [Evento Auth] Sesión válida para:", session.user.email)
         setUserId(session.user.id)
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-             await fetchCredits(session.user.id)
+          await fetchCredits(session.user.id)
         }
-        setLoading(false)
-      } else {
-        console.log("👋 [Evento Auth] Sin sesión (Logout o Error)")
-        // Solo borramos si el evento es explícitamente de salida
-        if (event === 'SIGNED_OUT') {
-            setCredits(null)
-            setUserId(null)
-        }
+      } else if (event === 'SIGNED_OUT') {
+        setCredits(0)
+        setUserId(null)
         setLoading(false)
       }
     })
