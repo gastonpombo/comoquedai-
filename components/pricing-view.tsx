@@ -4,18 +4,17 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-// Asegúrate de que estos nombres coincidan con tus variables de entorno en Vercel
 const PLANS = [
     {
         name: "Gratis",
         credits: 10,
         price: "$0",
-        priceId: null, // No requiere pago
+        priceId: null,
         features: ["10 Créditos de regalo", "Acceso a workflows básicos", "Velocidad estándar"],
-        current: true, // Plan por defecto
+        current: true,
     },
     {
         name: "Básico",
@@ -58,13 +57,7 @@ export function PricingView() {
     }, [searchParams])
 
     const handleCheckout = async (priceId: string | null | undefined) => {
-        // Validación visual para detectar errores de configuración
-        if (!priceId) {
-            if (priceId === null) return // Es el plan gratis, no hacemos nada
-            toast.error("Error de configuración", { description: "Falta el ID del precio en Vercel." })
-            console.error("Falta el ID del precio. Revisa tus variables de entorno NEXT_PUBLIC_STRIPE_PRICE_...")
-            return
-        }
+        if (!priceId) return
 
         setLoadingPriceId(priceId)
 
@@ -88,13 +81,24 @@ export function PricingView() {
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto px-4">
             {PLANS.map((plan) => (
                 <Card
                     key={plan.name}
-                    className={`relative flex flex-col transition-all duration-200 
-                ${plan.popular ? "border-primary shadow-lg shadow-primary/10 scale-105 z-10" : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"}
-                ${plan.current ? "bg-zinc-900/80 border-zinc-700" : ""}
+                    // AQUÍ ESTÁ EL CAMBIO: Forzamos bg-white y texto oscuro
+                    className={`
+                relative flex flex-col transition-all duration-200 border
+                ${plan.popular
+                            // POPULAR: Blanco brillante, borde primario, sombra
+                            ? "border-primary bg-white shadow-2xl shadow-primary/20 scale-105 z-10"
+                            // NORMAL: Blanco estándar, borde gris suave
+                            : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-md"
+                        }
+                ${plan.current
+                            // ACTUAL: Un gris muy clarito para diferenciar que está "desactivado/en uso"
+                            ? "bg-zinc-50 border-zinc-200 opacity-90"
+                            : ""
+                        }
             `}
                 >
                     {plan.popular && (
@@ -104,40 +108,48 @@ export function PricingView() {
                     )}
 
                     {plan.current && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 shadow-sm">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-zinc-200 border border-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-600 shadow-sm">
                             Tu Plan
                         </div>
                     )}
 
                     <CardHeader>
-                        <CardTitle className="text-xl text-white">{plan.name}</CardTitle>
-                        <CardDescription>{plan.credits} Créditos</CardDescription>
+                        <CardTitle className="text-xl text-zinc-900 font-bold">{plan.name}</CardTitle>
+                        <CardDescription className="text-zinc-500">{plan.credits} Créditos</CardDescription>
                     </CardHeader>
+
                     <CardContent className="flex-1">
                         <div className="mb-6 flex items-baseline gap-1">
-                            <span className="text-4xl font-bold text-white">{plan.price}</span>
-                            {plan.priceId && <span className="text-muted-foreground">/ pago único</span>}
+                            <span className="text-4xl font-extrabold text-zinc-900">{plan.price}</span>
+                            {plan.priceId && <span className="text-sm text-zinc-500 font-medium">/ pago único</span>}
                         </div>
-                        <ul className="space-y-3 text-sm text-zinc-300">
+                        <ul className="space-y-3 text-sm text-zinc-600">
                             {plan.features.map((feature) => (
-                                <li key={feature} className="flex items-center gap-2">
-                                    <Check className={`h-4 w-4 ${plan.current ? "text-zinc-500" : "text-primary"}`} />
-                                    <span className={plan.current ? "text-zinc-500" : ""}>{feature}</span>
+                                <li key={feature} className="flex items-center gap-3">
+                                    {/* Icono de check */}
+                                    <div className={`flex items-center justify-center w-5 h-5 rounded-full ${plan.current ? "bg-zinc-200 text-zinc-400" : "bg-primary/10 text-primary"}`}>
+                                        <Check className="h-3 w-3" />
+                                    </div>
+                                    <span>{feature}</span>
                                 </li>
                             ))}
                         </ul>
                     </CardContent>
+
                     <CardFooter>
                         <Button
-                            className="w-full"
+                            className="w-full font-semibold"
+                            // El botón popular usa el color primario (negro o violeta según tu config)
+                            // Los normales usan "outline" que en fondo blanco se ve bien (borde negro/gris)
                             variant={plan.popular ? "default" : plan.current ? "secondary" : "outline"}
-                            onClick={() => handleCheckout(plan.priceId)}
-                            // ARREGLO DEL SPINNER: Solo mostramos carga si loadingPriceId NO es nulo
-                            disabled={(loadingPriceId !== null) || plan.current === true}
-                        >
-                            {/* ARREGLO DEL SPINNER: Verificamos que loadingPriceId coincida Y no sea nulo */}
-                            {loadingPriceId === plan.priceId && loadingPriceId !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
+                            // Forzamos estilo extra para asegurar contraste en botones outline
+                            style={!plan.popular && !plan.current ? { color: '#18181b', borderColor: '#e4e4e7' } : {}}
+
+                            onClick={() => handleCheckout(plan.priceId || null)}
+                            disabled={loadingPriceId !== null || plan.current === true}
+                        >
+                            {loadingPriceId === plan.priceId && loadingPriceId !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {plan.current ? "Plan Actual" : "Comprar"}
                         </Button>
                     </CardFooter>
