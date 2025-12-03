@@ -7,15 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-// Definimos los planes
 const PLANS = [
   {
     name: "Gratis",
     credits: 10,
     price: "$0",
-    priceId: null, // No requiere pago
+    priceId: null,
     features: ["10 Créditos de regalo", "Acceso a workflows básicos", "Velocidad estándar"],
-    current: true, // <--- ESTE ES EL PLAN ACTIVO POR DEFECTO
+    current: true,
   },
   {
     name: "Básico",
@@ -30,7 +29,7 @@ const PLANS = [
     price: "$49",
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM,
     features: ["500 Créditos", "Soporte prioritario", "Generaciones rápidas", "Acceso a betas"],
-    popular: true, // <--- ESTE SIGUE SIENDO EL POPULAR
+    popular: true,
   },
   {
     name: "Empresas",
@@ -57,8 +56,9 @@ export function PricingView() {
     }
   }, [searchParams])
 
-  const handleCheckout = async (priceId: string | null) => {
-    if (!priceId) return // Si es gratis, no hace nada
+  // Aceptamos string, null o undefined
+  const handleCheckout = async (priceId: string | null | undefined) => {
+    if (!priceId) return
 
     setLoadingPriceId(priceId)
 
@@ -91,14 +91,12 @@ export function PricingView() {
                 ${plan.current ? "bg-zinc-900/80 border-zinc-700" : ""}
             `}
         >
-          {/* Badge de Popular */}
           {plan.popular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
               Más Popular
             </div>
           )}
 
-          {/* Badge de Plan Actual */}
           {plan.current && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 shadow-sm">
               Tu Plan
@@ -127,8 +125,9 @@ export function PricingView() {
             <Button
               className="w-full"
               variant={plan.popular ? "default" : plan.current ? "secondary" : "outline"}
-              onClick={() => handleCheckout(plan.priceId)}
-              disabled={loadingPriceId !== null || plan.current === true} // Deshabilitar si es el actual
+              // CORRECCIÓN AQUÍ: Usamos "|| null" para que TypeScript no se queje si es undefined
+              onClick={() => handleCheckout(plan.priceId || null)}
+              disabled={loadingPriceId !== null || plan.current === true}
             >
               {loadingPriceId === plan.priceId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {plan.current ? "Plan Actual" : "Comprar"}
