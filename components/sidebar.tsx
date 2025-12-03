@@ -2,123 +2,106 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, ImageIcon, CreditCard, Sparkles, LogOut, Loader2, ChevronRight } from "lucide-react"
+import { LayoutDashboard, ImageIcon, CreditCard, Sparkles, LogOut, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { motion } from "framer-motion"
 
-// 1. MENÚ SIMPLIFICADO
 const navItems = [
   { view: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { view: "mis-generaciones", label: "Mis Generaciones", icon: ImageIcon },
   { view: "comprar-creditos", label: "Comprar Créditos", icon: CreditCard },
 ]
 
+// CORRECCIÓN AQUÍ: Agregamos las nuevas props a la interfaz
 interface SidebarProps {
   onLogout?: () => void
   currentView?: string
   onNavigate?: (view: string) => void
+  userEmail?: string // <--- Nuevo
+  userTier?: string  // <--- Nuevo
 }
 
-export function Sidebar({ currentView = "dashboard", onNavigate }: SidebarProps) {
+export function Sidebar({ currentView = "dashboard", onNavigate, userEmail, userTier = "Free" }: SidebarProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
-
     try {
       const supabase = createClient()
-      // Intentamos cerrar sesión limpiamente
       await supabase.auth.signOut()
     } catch (error) {
-      console.error("Error en signOut (no importa, forzamos salida):", error)
+      console.error("Error logout", error)
     } finally {
-      // ESTO ES LA CLAVE:
-      // Usamos window.location.href en lugar de router.replace.
-      // Esto fuerza una recarga completa del navegador, limpiando cualquier caché de memoria o estado "zombi".
+      // Redirección dura para limpiar estado
       window.location.href = "/"
     }
   }
 
+  // Lógica visual para el nombre
+  const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "U"
+  const displayName = userEmail ? userEmail.split('@')[0] : "Usuario"
+
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-72 border-r border-white/10 bg-sidebar/50 backdrop-blur-xl transition-all duration-300">
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-20 items-center gap-3 border-b border-white/5 px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/20">
-            <Sparkles className="h-5 w-5 text-white" />
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-sidebar-border bg-sidebar flex flex-col">
+
+      {/* Header Logo */}
+      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6 shrink-0">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+          <Sparkles className="h-4 w-4 text-sidebar-primary-foreground" />
+        </div>
+        <span className="text-lg font-semibold tracking-tight text-sidebar-foreground">ImageAI</span>
+      </div>
+
+      {/* Navegación */}
+      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+        {navItems.map((item) => {
+          const isActive = currentView === item.view
+          return (
+            <button
+              key={item.view}
+              onClick={() => onNavigate?.(item.view)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Footer de Usuario */}
+      <div className="border-t border-sidebar-border p-4 shrink-0">
+
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <div className="h-9 w-9 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 text-white font-bold text-xs">
+            {initials}
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">ImageAI</span>
-            <span className="text-xs text-muted-foreground">Agency Suite</span>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-sm font-medium text-white truncate w-32" title={userEmail}>
+              {displayName}
+            </span>
+            <span className="text-xs text-zinc-500 capitalize">
+              {userTier || "Free"} Plan
+            </span>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-2 p-4">
-          {navItems.map((item) => {
-            const isActive = currentView === item.view
-            return (
-              <button
-                key={item.view}
-                onClick={() => onNavigate?.(item.view)}
-                className={cn(
-                  "group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 overflow-hidden",
-                  isActive
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-white hover:bg-white/5"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 border border-primary/20 rounded-xl"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-
-                <item.icon className={cn("h-5 w-5 relative z-10 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-white")} />
-                <span className="relative z-10">{item.label}</span>
-
-                {isActive && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="ml-auto"
-                  >
-                    <ChevronRight className="h-4 w-4 text-primary" />
-                  </motion.div>
-                )}
-              </button>
-            )
-          })}
-        </nav>
-
-        {/* User Profile & Logout */}
-        <div className="border-t border-white/5 p-4 m-4 rounded-2xl bg-white/5">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">
-              AG
-            </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium truncate text-white">Agencia Demo</span>
-              <span className="text-xs text-muted-foreground truncate">Pro Plan</span>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-            {isLoggingOut ? "Cerrando..." : "Cerrar sesión"}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-red-500/10 hover:text-red-500"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+          {isLoggingOut ? "Saliendo..." : "Cerrar sesión"}
+        </Button>
       </div>
     </aside>
   )
