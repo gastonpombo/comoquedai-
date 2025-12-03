@@ -17,7 +17,7 @@ interface AuthFormProps {
 
 export function AuthForm({ onSuccess }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false) // Estado separado para Google
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
@@ -30,20 +30,17 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // Redirige al callback que ya configuramos
           redirectTo: `${location.origin}/auth/callback`,
         },
       })
 
       if (error) throw error
 
-      // Nota: No redirigimos manualmente aquí porque OAuth lo hace solo
     } catch (error: any) {
       toast.error("Error con Google", { description: error.message })
       setIsGoogleLoading(false)
     }
   }
-  // ------------------------
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,8 +56,9 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         toast.error("Error al iniciar sesión", { description: error.message })
       } else {
         toast.success("¡Bienvenido de nuevo!")
-        if (onSuccess) onSuccess()
-        else {
+        if (onSuccess) {
+          onSuccess()
+        } else {
           router.refresh()
           router.push("/dashboard")
         }
@@ -102,7 +100,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   return (
     <Card className="w-full border-0 bg-transparent shadow-none">
 
-      {/* SECCIÓN DE GOOGLE (Común para Login y Registro) */}
+      {/* SECCIÓN DE GOOGLE */}
       <div className="mb-6">
         <Button
           variant="outline"
@@ -113,7 +111,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           {isGoogleLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            // Icono de Google SVG
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -152,6 +149,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           <TabsTrigger value="register">Registrarse</TabsTrigger>
         </TabsList>
 
+        {/* LOGIN FORM */}
         <TabsContent value="login">
           <form onSubmit={handleLogin}>
             <CardHeader className="px-0 pt-4">
@@ -160,14 +158,30 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             <CardContent className="space-y-4 px-0">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-zinc-900 border-zinc-700" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-zinc-900 border-zinc-700"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-zinc-900 border-zinc-700" />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-zinc-900 border-zinc-700"
+                />
               </div>
             </CardContent>
-            <CardFooter className="px-0">
+            {/* AQUÍ ESTÁ EL ESPACIO EXTRA (pt-6) */}
+            <CardFooter className="px-0 pt-6">
               <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Ingresar
@@ -176,6 +190,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           </form>
         </TabsContent>
 
+        {/* REGISTER FORM */}
         <TabsContent value="register">
           <form onSubmit={handleSignUp}>
             <CardHeader className="px-0 pt-4">
@@ -184,14 +199,30 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             <CardContent className="space-y-4 px-0">
               <div className="space-y-2">
                 <Label htmlFor="register-email">Email</Label>
-                <Input id="register-email" type="email" placeholder="m@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-zinc-900 border-zinc-700" />
+                <Input
+                  id="register-email"
+                  type="email"
+                  placeholder="m@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-zinc-900 border-zinc-700"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="register-password">Contraseña</Label>
-                <Input id="register-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-zinc-900 border-zinc-700" />
+                <Input
+                  id="register-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-zinc-900 border-zinc-700"
+                />
               </div>
             </CardContent>
-            <CardFooter className="px-0">
+            {/* AQUÍ TAMBIÉN AGREGUÉ EL ESPACIO (pt-6) */}
+            <CardFooter className="px-0 pt-6">
               <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Registrarse
