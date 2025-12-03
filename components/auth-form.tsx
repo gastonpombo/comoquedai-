@@ -23,7 +23,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const router = useRouter()
   const supabase = createClient()
 
-  // --- GOOGLE LOGIN ---
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
     try {
@@ -40,7 +39,16 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     }
   }
 
-  // --- LOGIN CON EMAIL ---
+  const finalizeLogin = () => {
+    toast.success("¡Bienvenido!")
+    if (onSuccess) {
+      onSuccess()
+    } else {
+      router.refresh()
+      router.push("/dashboard")
+    }
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -54,13 +62,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       if (error) {
         toast.error("Error al iniciar sesión", { description: error.message })
       } else {
-        toast.success("¡Bienvenido de nuevo!")
-        if (onSuccess) {
-          onSuccess()
-        } else {
-          router.refresh()
-          router.push("/dashboard")
-        }
+        finalizeLogin()
       }
     } catch (error) {
       toast.error("Ocurrió un error inesperado")
@@ -69,13 +71,13 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     }
   }
 
-  // --- REGISTRO (MODIFICADO PARA ENTRADA DIRECTA) ---
+  // --- LÓGICA DE REGISTRO BLINDADA ---
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      // Pedimos el registro
+      // 1. Intentamos crear el usuario
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -90,28 +92,37 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         return
       }
 
-      // CAMBIO CLAVE AQUÍ:
-      // Si Supabase nos devuelve una sesión, significa que NO requiere confirmación.
-      // Entramos directo.
+      // 2. VERIFICACIÓN DOBLE:
+      // Si tenemos sesión, entramos directo.
       if (data.session) {
-        toast.success("¡Cuenta creada!", { description: "Bienvenido a ImageAI." })
+        finalizeLogin()
+      }
+      // Si NO hay sesión (pero tampoco error), significa que el usuario se creó
+      // pero Supabase no lo logueó automáticamente. Lo forzamos nosotros:
+      else if (data.user) {
+        console.log("Usuario creado, forzando auto-login...")
 
-        if (onSuccess) {
-          onSuccess()
-        } else {
-          router.refresh()
-          router.push("/dashboard") // <--- REDIRECCIÓN INMEDIATA
-        }
-      } else {
-        // Solo mostramos esto si la configuración de Supabase OBLIGA a confirmar
-        toast.info("Revisa tu email", {
-          description: "Te hemos enviado un enlace para confirmar tu cuenta.",
+        // Intentamos loguear inmediatamente
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         })
-        setIsLoading(false)
+
+        if (!loginError) {
+          finalizeLogin()
+        } else {
+          // Si falla el auto-login, entonces sí pedimos revisar email
+          toast.info("Cuenta creada", {
+            description: "Por favor inicia sesión o revisa tu email."
+          })
+          // Cambiamos a la pestaña de login visualmente
+          document.getElementById("tab-login-trigger")?.click()
+        }
       }
 
     } catch (error) {
       toast.error("Ocurrió un error inesperado")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -119,7 +130,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   return (
     <Card className="w-full border-0 bg-transparent shadow-none">
 
-      {/* SECCIÓN DE GOOGLE */}
       <div className="mb-6">
         <Button
           variant="outline"
@@ -152,11 +162,10 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
       <Tabs defaultValue="login" className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50">
-          <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
+          <TabsTrigger value="login" id="tab-login-trigger">Iniciar Sesión</TabsTrigger>
           <TabsTrigger value="register">Registrarse</TabsTrigger>
         </TabsList>
 
-        {/* LOGIN */}
         <TabsContent value="login">
           <form onSubmit={handleLogin}>
             <CardHeader className="px-0 pt-4">
@@ -181,7 +190,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           </form>
         </TabsContent>
 
-        {/* REGISTER */}
         <TabsContent value="register">
           <form onSubmit={handleSignUp}>
             <CardHeader className="px-0 pt-4">
