@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ImageAI - Generador de Imágenes con IA para Agencias | Creación Instantánea",
-  description: "Genera imágenes profesionales con Inteligencia Artificial en segundos. Plataforma SaaS para agencias de marketing. 100+ créditos gratis. Calidad de estudio, escalabilidad infinita.",
+  description: "Genera imágenes profesionales con Inteligencia Artificial en segundos. Plataforma SaaS para agencias de marketing. 10 créditos gratis para comenzar. Calidad de estudio, escalabilidad infinita.",
   keywords: ["generador imágenes ia", "inteligencia artificial", "marketing digital", "agencias creativas", "generación imágenes automática", "ia para marketing", "herramientas marketing digital"],
   authors: [{ name: "ImageAI" }],
   creator: "ImageAI",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     url: 'https://shopshop.market/',
     title: 'ImageAI - Generador de Imágenes con IA para Agencias',
-    description: 'Genera imágenes profesionales con Inteligencia Artificial en segundos. Plataforma SaaS para agencias de marketing. 100+ créditos gratis.',
+    description: 'Genera imágenes profesionales con Inteligencia Artificial en segundos. Plataforma SaaS para agencias de marketing. 10 créditos gratis para comenzar.',
     siteName: 'ImageAI',
     images: [
       {
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'ImageAI - Generador de Imágenes con IA para Agencias',
-    description: 'Genera imágenes profesionales con IA en segundos. 100+ créditos gratis para agencias de marketing.',
+    description: 'Genera imágenes profesionales con IA en segundos. 10 créditos gratis para agencias de marketing.',
     images: ['/twitter-image.png'],
     creator: '@imageai',
   },

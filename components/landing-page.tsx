@@ -60,7 +60,7 @@ export function LandingPage() {
               </h1>
               <p className="mx-auto mb-12 max-w-2xl text-xl text-muted-foreground leading-relaxed">
                 Crea imágenes profesionales con IA en segundos. Plataforma SaaS diseñada para agencias de marketing digital.
-                100+ créditos gratis para comenzar. Calidad de estudio, escalabilidad infinita y control total sobre tu marca.
+                10 créditos gratis para comenzar. Calidad de estudio, escalabilidad infinita y control total sobre tu marca.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link href="/login">
@@ -143,7 +143,7 @@ export function LandingPage() {
                 </p>
                 <Link href="/login">
                   <Button size="lg" className="h-16 px-12 text-lg rounded-full bg-background text-foreground hover:bg-background/90 shadow-xl transition-transform hover:scale-105 border-0">
-                    Obtener 100 Créditos Gratis
+                    Obtener 10 Créditos Gratis
                   </Button>
                 </Link>
               </div>
