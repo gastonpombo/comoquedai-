@@ -56,7 +56,6 @@ export function PricingView() {
     }
   }, [searchParams])
 
-  // Aceptamos string, null o undefined
   const handleCheckout = async (priceId: string | null | undefined) => {
     if (!priceId) return
 
@@ -86,46 +85,45 @@ export function PricingView() {
       {PLANS.map((plan) => (
         <Card
           key={plan.name}
-          className={`relative flex flex-col transition-all duration-200 
-                ${plan.popular ? "border-primary shadow-lg shadow-primary/10 scale-105 z-10" : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"}
-                ${plan.current ? "bg-zinc-900/80 border-zinc-700" : ""}
+          className={`relative flex flex-col transition-all duration-300 
+                ${plan.popular ? "border-primary shadow-xl shadow-primary/20 scale-105 z-10 bg-primary/5" : "border-border bg-card hover:border-primary/30 hover:shadow-lg"}
+                ${plan.current ? "bg-muted/50 border-muted-foreground/20" : ""}
             `}
         >
           {plan.popular && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-md">
               Más Popular
             </div>
           )}
 
           {plan.current && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 shadow-sm">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-muted border border-border px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
               Tu Plan
             </div>
           )}
 
           <CardHeader>
-            <CardTitle className="text-xl text-white">{plan.name}</CardTitle>
+            <CardTitle className="text-xl text-foreground">{plan.name}</CardTitle>
             <CardDescription>{plan.credits} Créditos</CardDescription>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="mb-6 flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-white">{plan.price}</span>
-              {plan.priceId && <span className="text-muted-foreground">/ pago único</span>}
+              <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+              {plan.priceId && <span className="text-muted-foreground text-sm">/ pago único</span>}
             </div>
-            <ul className="space-y-3 text-sm text-zinc-300">
+            <ul className="space-y-3 text-sm">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2">
-                  <Check className={`h-4 w-4 ${plan.current ? "text-zinc-500" : "text-primary"}`} />
-                  <span className={plan.current ? "text-zinc-500" : ""}>{feature}</span>
+                  <Check className={`h-4 w-4 ${plan.current ? "text-muted-foreground" : "text-primary"}`} />
+                  <span className={plan.current ? "text-muted-foreground" : "text-foreground"}>{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
           <CardFooter>
             <Button
-              className="w-full"
+              className="w-full rounded-full"
               variant={plan.popular ? "default" : plan.current ? "secondary" : "outline"}
-              // CORRECCIÓN AQUÍ: Usamos "|| null" para que TypeScript no se queje si es undefined
               onClick={() => handleCheckout(plan.priceId || null)}
               disabled={loadingPriceId !== null || plan.current === true}
             >
