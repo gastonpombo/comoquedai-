@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-11-17.clover' as any, // <--- CAMBIO AQUÍ (y agregamos 'as any' para evitar peleas futuras)
 })
 
 // Mapa de créditos según el precio (Asegúrate que coincida con tus precios de Stripe)
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll() { return cookieStore.getAll() }, setAll() {} } }
+    { cookies: { getAll() { return cookieStore.getAll() }, setAll() { } } }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   const body = await req.json()
   const { priceId } = body
-  
+
   // Calcular créditos
   const creditsAmount = CREDITS_MAP[priceId]
 
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       // AQUÍ ESTÁ LA MAGIA: Guardamos ID y Créditos en el pago
       metadata: {
         userId: user.id,
-        credits: creditsAmount.toString() 
+        credits: creditsAmount.toString()
       },
     })
 
