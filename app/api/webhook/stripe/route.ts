@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-11-17.clover' as any, // <--- ACTUALIZA ESTO AQUÍ TAMBIÉN
 })
 
 // IMPORTANTE: Usamos la Service Role Key para poder escribir sin ser el usuario
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         console.error('❌ Error actualizando créditos en Supabase:', error)
         return NextResponse.json({ error: 'Error DB' }, { status: 500 })
       }
-      
+
       console.log('✅ Créditos actualizados correctamente')
     }
   }
