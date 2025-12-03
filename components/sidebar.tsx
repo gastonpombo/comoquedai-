@@ -26,15 +26,19 @@ export function Sidebar({ currentView = "dashboard", onNavigate }: SidebarProps)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleLogout = async () => {
+    setIsLoggingOut(true)
+
     try {
-      setIsLoggingOut(true)
       const supabase = createClient()
+      // Intentamos cerrar sesión limpiamente
       await supabase.auth.signOut()
-      router.refresh()
-      router.replace("/") // Al salir vamos a la Landing
     } catch (error) {
-      console.error("Error al cerrar sesión:", error)
-      setIsLoggingOut(false)
+      console.error("Error en signOut (no importa, forzamos salida):", error)
+    } finally {
+      // ESTO ES LA CLAVE:
+      // Usamos window.location.href en lugar de router.replace.
+      // Esto fuerza una recarga completa del navegador, limpiando cualquier caché de memoria o estado "zombi".
+      window.location.href = "/"
     }
   }
 
